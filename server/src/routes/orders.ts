@@ -4,7 +4,6 @@ import { HttpError } from "../lib/httpError.js";
 import { prisma } from "../lib/prisma.js";
 import { serializeOrder } from "../lib/serializers.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import type { AuthenticatedRequest } from "../types/auth.js";
 
 const router = Router();
 
@@ -27,9 +26,10 @@ function createOrderCode() {
   return `EC-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 90 + 10)}`;
 }
 
-router.get("/", async (request: AuthenticatedRequest, response) => {
+router.get("/", async (request, response) => {
+  const userId = request.auth!.user.id;
   const orders = await prisma.order.findMany({
-    where: { userId: request.auth.user.id },
+    where: { userId },
     include: {
       lines: true
     },
@@ -39,17 +39,19 @@ router.get("/", async (request: AuthenticatedRequest, response) => {
   response.json({ orders: orders.map(serializeOrder) });
 });
 
-router.post("/checkout", async (request: AuthenticatedRequest, response, next) => {
+router.post("/checkout", async (request, response, next) => {
   const parsed = checkoutSchema.safeParse(request.body);
   if (!parsed.success) {
     response.status(400).json({ message: "Invalid checkout payload." });
     return;
   }
 
+  const userId = request.auth!.user.id;
+
   try {
     const order = await prisma.$transaction(async (tx) => {
       const cartItems = await tx.cartItem.findMany({
-        where: { userId: request.auth.user.id },
+        where: { userId },
         include: { product: true }
       });
 
@@ -87,10 +89,10 @@ router.post("/checkout", async (request: AuthenticatedRequest, response, next) =
         }
       }
 
-      const order = await tx.order.create({
+      const createdOrder = await tx.order.create({
         data: {
           orderCode: createOrderCode(),
-          userId: request.auth.user.id,
+          userId,
           subtotal,
           shipping,
           total,
@@ -115,10 +117,10 @@ router.post("/checkout", async (request: AuthenticatedRequest, response, next) =
       });
 
       await tx.cartItem.deleteMany({
-        where: { userId: request.auth.user.id }
+        where: { userId }
       });
 
-      return order;
+      return createdOrder;
     });
 
     response.status(201).json({ order: serializeOrder(order) });

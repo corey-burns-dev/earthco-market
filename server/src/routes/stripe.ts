@@ -7,7 +7,6 @@ import { HttpError } from "../lib/httpError.js";
 import { prisma } from "../lib/prisma.js";
 import { serializeOrder } from "../lib/serializers.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import type { AuthenticatedRequest } from "../types/auth.js";
 
 const router = Router();
 
@@ -38,18 +37,20 @@ function getStripeClient() {
 
 router.use(requireAuth);
 
-router.post("/checkout-session", async (request: AuthenticatedRequest, response, next) => {
+router.post("/checkout-session", async (request, response, next) => {
   const parsed = checkoutSchema.safeParse(request.body);
   if (!parsed.success) {
     response.status(400).json({ message: "Invalid checkout payload." });
     return;
   }
 
+  const userId = request.auth!.user.id;
+
   try {
     const stripe = getStripeClient();
 
     const cartItems = await prisma.cartItem.findMany({
-      where: { userId: request.auth.user.id },
+      where: { userId },
       include: { product: true }
     });
 
@@ -101,14 +102,14 @@ router.post("/checkout-session", async (request: AuthenticatedRequest, response,
           : [])
       ],
       metadata: {
-        userId: request.auth.user.id
+        userId
       }
     });
 
     const order = await prisma.order.create({
       data: {
         orderCode: createOrderCode(),
-        userId: request.auth.user.id,
+        userId,
         status: OrderStatus.PENDING_PAYMENT,
         stripeSessionId: session.id,
         subtotal,
@@ -144,17 +145,19 @@ router.post("/checkout-session", async (request: AuthenticatedRequest, response,
   }
 });
 
-router.post("/confirm/:sessionId", async (request: AuthenticatedRequest, response, next) => {
+router.post("/confirm/:sessionId", async (request, response, next) => {
   try {
     const stripe = getStripeClient();
-    const sessionId = request.params.sessionId;
+    const sessionParam = request.params.sessionId;
+    const sessionId = Array.isArray(sessionParam) ? sessionParam[0] : sessionParam;
+    const userId = request.auth!.user.id;
 
     const [session, existingOrder] = await Promise.all([
       stripe.checkout.sessions.retrieve(sessionId),
       prisma.order.findFirst({
         where: {
           stripeSessionId: sessionId,
-          userId: request.auth.user.id
+          userId
         },
         include: {
           lines: true
@@ -199,7 +202,7 @@ router.post("/confirm/:sessionId", async (request: AuthenticatedRequest, respons
 
       await tx.cartItem.deleteMany({
         where: {
-          userId: request.auth.user.id
+          userId
         }
       });
 

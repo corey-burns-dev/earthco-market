@@ -2,7 +2,6 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import type { AuthenticatedRequest } from "../types/auth.js";
 
 const router = Router();
 
@@ -32,12 +31,12 @@ async function readCart(userId: string) {
   return items;
 }
 
-router.get("/", async (request: AuthenticatedRequest, response) => {
-  const items = await readCart(request.auth.user.id);
+router.get("/", async (request, response) => {
+  const items = await readCart(request.auth!.user.id);
   response.json({ cart: items });
 });
 
-router.post("/", async (request: AuthenticatedRequest, response) => {
+router.post("/", async (request, response) => {
   const parsed = addSchema.safeParse(request.body);
   if (!parsed.success) {
     response.status(400).json({ message: "Invalid cart payload." });
@@ -56,10 +55,12 @@ router.post("/", async (request: AuthenticatedRequest, response) => {
     return;
   }
 
+  const userId = request.auth!.user.id;
+
   const existing = await prisma.cartItem.findUnique({
     where: {
       userId_productId: {
-        userId: request.auth.user.id,
+        userId,
         productId: parsed.data.productId
       }
     }
@@ -68,7 +69,7 @@ router.post("/", async (request: AuthenticatedRequest, response) => {
   if (!existing) {
     await prisma.cartItem.create({
       data: {
-        userId: request.auth.user.id,
+        userId,
         productId: parsed.data.productId,
         quantity
       }
@@ -82,11 +83,11 @@ router.post("/", async (request: AuthenticatedRequest, response) => {
     });
   }
 
-  const items = await readCart(request.auth.user.id);
+  const items = await readCart(userId);
   response.json({ cart: items });
 });
 
-router.patch("/:productId", async (request: AuthenticatedRequest, response) => {
+router.patch("/:productId", async (request, response) => {
   const productId = Number(request.params.productId);
   if (!Number.isInteger(productId)) {
     response.status(400).json({ message: "Invalid product id." });
@@ -99,10 +100,12 @@ router.patch("/:productId", async (request: AuthenticatedRequest, response) => {
     return;
   }
 
+  const userId = request.auth!.user.id;
+
   if (parsed.data.quantity <= 0) {
     await prisma.cartItem.deleteMany({
       where: {
-        userId: request.auth.user.id,
+        userId,
         productId
       }
     });
@@ -120,12 +123,12 @@ router.patch("/:productId", async (request: AuthenticatedRequest, response) => {
     await prisma.cartItem.upsert({
       where: {
         userId_productId: {
-          userId: request.auth.user.id,
+          userId,
           productId
         }
       },
       create: {
-        userId: request.auth.user.id,
+        userId,
         productId,
         quantity: parsed.data.quantity
       },
@@ -135,32 +138,34 @@ router.patch("/:productId", async (request: AuthenticatedRequest, response) => {
     });
   }
 
-  const items = await readCart(request.auth.user.id);
+  const items = await readCart(userId);
   response.json({ cart: items });
 });
 
-router.delete("/:productId", async (request: AuthenticatedRequest, response) => {
+router.delete("/:productId", async (request, response) => {
   const productId = Number(request.params.productId);
   if (!Number.isInteger(productId)) {
     response.status(400).json({ message: "Invalid product id." });
     return;
   }
 
+  const userId = request.auth!.user.id;
+
   await prisma.cartItem.deleteMany({
     where: {
-      userId: request.auth.user.id,
+      userId,
       productId
     }
   });
 
-  const items = await readCart(request.auth.user.id);
+  const items = await readCart(userId);
   response.json({ cart: items });
 });
 
-router.delete("/", async (request: AuthenticatedRequest, response) => {
+router.delete("/", async (request, response) => {
   await prisma.cartItem.deleteMany({
     where: {
-      userId: request.auth.user.id
+      userId: request.auth!.user.id
     }
   });
 

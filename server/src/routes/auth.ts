@@ -4,7 +4,6 @@ import { createSessionToken, hashPassword, verifyPassword } from "../lib/auth.js
 import { env } from "../lib/env.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import type { AuthenticatedRequest } from "../types/auth.js";
 
 const router = Router();
 
@@ -108,18 +107,18 @@ router.post("/login", async (request, response) => {
   });
 });
 
-router.post("/logout", requireAuth, async (request: AuthenticatedRequest, response) => {
+router.post("/logout", requireAuth, async (request, response) => {
   await prisma.session.deleteMany({
     where: {
-      token: request.auth.session.token
+      token: request.auth!.session.token
     }
   });
 
   response.json({ ok: true });
 });
 
-router.get("/me", requireAuth, (request: AuthenticatedRequest, response) => {
-  response.json({ user: request.auth.user });
+router.get("/me", requireAuth, (request, response) => {
+  response.json({ user: request.auth!.user });
 });
 
 export default router;

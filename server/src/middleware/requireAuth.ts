@@ -1,6 +1,5 @@
-import type { NextFunction, Response } from "express";
+import type { RequestHandler } from "express";
 import { prisma } from "../lib/prisma.js";
-import type { AuthenticatedRequest } from "../types/auth.js";
 
 function readToken(header: string | undefined): string | null {
   if (!header) {
@@ -15,11 +14,7 @@ function readToken(header: string | undefined): string | null {
   return token;
 }
 
-export async function requireAuth(
-  request: AuthenticatedRequest,
-  response: Response,
-  next: NextFunction,
-) {
+export const requireAuth: RequestHandler = async (request, response, next) => {
   const token = readToken(request.headers.authorization);
 
   if (!token) {
@@ -56,4 +51,4 @@ export async function requireAuth(
   };
 
   next();
-}
+};
