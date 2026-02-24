@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import type { Product } from "../types/models";
 import { formatCurrency } from "../utils/format";
@@ -10,11 +9,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
   return (
-    <motion.article
-      className="product-card"
-      whileHover={{ x: 3, y: 3 }}
-      transition={{ duration: 0.15 }}
-    >
+    <article className="product-card">
       <Link to={`/product/${product.slug}`} className="product-image-wrap" aria-label={product.name}>
         <div className="product-id-tag">#{product.id.toString().padStart(3, "0")}</div>
         <img src={product.heroImage} alt={product.name} className="product-image" />
@@ -32,7 +27,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
         </Link>
         <button
           type="button"
-          className="btn btn-dark"
+          className="btn btn-cart"
           onClick={() => {
             onAddToCart(product.id);
           }}
@@ -40,6 +35,6 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           Add to Cart
         </button>
       </div>
-    </motion.article>
+    </article>
   );
 }

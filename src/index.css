@@ -132,11 +132,15 @@ h4 {
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
-  transition: transform 120ms ease, box-shadow 120ms ease;
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease, color 120ms ease;
 }
 
 .btn:hover {
-  transform: translate(2px, 2px);
+  filter: brightness(0.98);
+}
+
+.btn:active {
+  transform: translate(4px, 4px);
 }
 
 .btn-light {
@@ -145,10 +149,34 @@ h4 {
   box-shadow: 4px 4px 0 0 rgba(61, 45, 31, 1);
 }
 
+.btn-light:active {
+  box-shadow: 0 0 0 0 rgba(61, 45, 31, 1);
+}
+
 .btn-dark {
   background: var(--ink);
   color: #fff;
   box-shadow: 4px 4px 0 0 rgba(61, 45, 31, 1);
+}
+
+.btn-dark:active {
+  box-shadow: 0 0 0 0 rgba(61, 45, 31, 1);
+}
+
+.btn-cart {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+  box-shadow: 4px 4px 0 0 rgba(122, 139, 92, 1);
+}
+
+.btn-cart:hover {
+  background: #2e2219;
+  color: #fff;
+}
+
+.btn-cart:active {
+  box-shadow: 0 0 0 0 rgba(122, 139, 92, 1);
 }
 
 .icon-btn {
