@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PageShell from "../components/PageShell";
 import ProductCard from "../components/ProductCard";
 import { useStore } from "../context/StoreContext";
@@ -17,6 +17,10 @@ export default function ShopPage() {
   const { products, addToCart } = useStore();
   const [activeCategory, setActiveCategory] = useState<ProductCategory>("ALL");
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
 
   const visibleProducts = useMemo(() => {
     return products.filter((product) => {
