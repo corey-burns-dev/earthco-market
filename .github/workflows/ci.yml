@@ -48,7 +48,7 @@ jobs:
         run: bun run prisma:generate
 
       - name: Apply database migrations
-        run: bunx prisma migrate deploy --schema server/prisma/schema.prisma
+        run: bunx prisma migrate deploy --config server/prisma.config.ts
 
       - name: Lint
         run: bun run lint

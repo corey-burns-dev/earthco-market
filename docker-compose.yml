@@ -1,4 +1,11 @@
 version: "3.9"
+
+# ---------------------------------------------------------------------------
+# Dev: docker compose up
+# Prod: pull images from GHCR and supply real env vars via .env or your
+#       secrets manager before running docker compose up.
+# ---------------------------------------------------------------------------
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -7,10 +14,54 @@ services:
     environment:
       POSTGRES_DB: earthco_market
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - earthco_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d earthco_market"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  server:
+    image: ghcr.io/corey-burns-dev/earthco-market-server:${IMAGE_TAG:-latest}
+    container_name: earthco-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/earthco_market?schema=public
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN}
+      SESSION_DAYS: ${SESSION_DAYS:-14}
+      ADMIN_EMAILS: ${ADMIN_EMAILS}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  client:
+    image: ghcr.io/corey-burns-dev/earthco-market-client:${IMAGE_TAG:-latest}
+    container_name: earthco-client
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/index.html || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
 volumes:
   earthco_pgdata:
