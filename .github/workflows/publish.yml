@@ -38,7 +38,6 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.OWNER }}/earthco-market-server
           tags: |
-            type=sha,prefix=sha-
             type=raw,value=latest
 
       - name: Build & push server image
@@ -59,7 +58,6 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.OWNER }}/earthco-market-client
           tags: |
-            type=sha,prefix=sha-
             type=raw,value=latest
 
       - name: Build & push client image
