@@ -27,7 +27,12 @@ export default function Layout() {
           <NavLink to="/account" className="chip-link">
             Account
           </NavLink>
-          <NavLink to="/auth" className={({ isActive }) => `chip-link${isActive ? " active" : ""}${!currentUser ? " chip-link-cta" : ""}`}>
+          <NavLink
+            to="/auth"
+            className={({ isActive }) =>
+              `chip-link${isActive ? " active" : ""}${!currentUser ? " chip-link-cta" : ""}`
+            }
+          >
             {currentUser ? "Switch User" : "Login/Register"}
           </NavLink>
           <NavLink to="/cart" className="btn btn-light icon-btn">
