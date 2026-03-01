@@ -45,10 +45,10 @@ export default function CartPage() {
           {cartLines.map((line) => (
             <div className="cart-line" key={line.product.id}>
               <img src={line.product.heroImage} alt={line.product.name} />
-              <div>
+              <div className="cart-line-info">
                 <h3>{line.product.name}</h3>
                 <p>{line.product.tagline}</p>
-                <strong>{formatCurrency(line.product.price)}</strong>
+                <strong className="cart-line-unit-price">{formatCurrency(line.product.price)}</strong>
               </div>
               <div className="line-qty">
                 <button
