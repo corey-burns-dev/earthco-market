@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { type ChangeEvent, type FormEvent, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import { useStore } from "../context/StoreContext";
@@ -9,6 +9,7 @@ import {
   deleteAdminProduct,
   getAdminProducts,
   updateAdminProduct,
+  uploadAdminImage,
 } from "../utils/api";
 
 const categories: Product["category"][] = [
@@ -44,6 +45,22 @@ function toMessage(error: unknown): string {
   return "Admin request failed.";
 }
 
+function toFormProduct(product: Product): Omit<Product, "id"> {
+  return {
+    slug: product.slug,
+    name: product.name,
+    tagline: product.tagline,
+    description: product.description,
+    price: product.price,
+    category: product.category,
+    accent: product.accent,
+    heroImage: product.heroImage,
+    gallery: product.gallery,
+    stock: product.stock,
+    rating: product.rating,
+  };
+}
+
 export default function AdminPage() {
   const { currentUser, authToken, refreshProducts } = useStore();
   const [adminProducts, setAdminProducts] = useState<Product[]>([]);
@@ -51,6 +68,9 @@ export default function AdminPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(defaultForm);
+  const [galleryUrlInput, setGalleryUrlInput] = useState("");
+  const [uploadingHero, setUploadingHero] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
 
   const isAdmin = Boolean(currentUser?.isAdmin && authToken);
 
@@ -113,10 +133,16 @@ export default function AdminPage() {
     }
 
     try {
+      const gallery = form.gallery.map((entry) => entry.trim()).filter(Boolean);
+      if (gallery.length === 0 && form.heroImage.trim()) {
+        gallery.push(form.heroImage.trim());
+      }
+
       const payload = {
         ...form,
         slug: form.slug.trim().toLowerCase(),
-        gallery: form.gallery.filter((entry) => entry.trim().length > 0),
+        heroImage: form.heroImage.trim(),
+        gallery,
       };
 
       if (editingId) {
@@ -129,6 +155,7 @@ export default function AdminPage() {
 
       setForm(defaultForm);
       setEditingId(null);
+      setGalleryUrlInput("");
       await loadProducts();
       await refreshProducts();
     } catch (error) {
@@ -153,216 +180,356 @@ export default function AdminPage() {
     }
   }
 
+  async function onUploadHero(event: ChangeEvent<HTMLInputElement>) {
+    const token = authToken;
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!token || !file) {
+      return;
+    }
+
+    try {
+      setUploadingHero(true);
+      const { url } = await uploadAdminImage(token, file);
+      setForm((prev) => ({ ...prev, heroImage: url }));
+      setMessage("Hero image uploaded.");
+    } catch (error) {
+      setMessage(toMessage(error));
+    } finally {
+      setUploadingHero(false);
+    }
+  }
+
+  async function onUploadGallery(event: ChangeEvent<HTMLInputElement>) {
+    const token = authToken;
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!token || !file) {
+      return;
+    }
+
+    try {
+      setUploadingGallery(true);
+      const { url } = await uploadAdminImage(token, file);
+      setForm((prev) => ({
+        ...prev,
+        gallery: [...prev.gallery, url].slice(0, 6),
+      }));
+      setMessage("Gallery image uploaded.");
+    } catch (error) {
+      setMessage(toMessage(error));
+    } finally {
+      setUploadingGallery(false);
+    }
+  }
+
+  function onAddGalleryUrl() {
+    const url = galleryUrlInput.trim();
+    if (!url) {
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      gallery: [...prev.gallery, url].slice(0, 6),
+    }));
+    setGalleryUrlInput("");
+  }
+
+  function onRemoveGalleryImage(index: number) {
+    setForm((prev) => ({
+      ...prev,
+      gallery: prev.gallery.filter((_, entryIndex) => entryIndex !== index),
+    }));
+  }
+
   return (
     <PageShell>
-      <section className="section-head brutal-block">
-        <div>
-          <h2>Admin Products</h2>
-          <p>Create, update, and remove storefront products.</p>
+      <section className="admin-layout">
+        <div className="admin-main-stack">
+          <section className="section-head brutal-block">
+            <div>
+              <h2>Admin Products</h2>
+              <p>Compact catalog editor with image upload and live previews.</p>
+            </div>
+            <button type="button" className="btn btn-light" onClick={() => void loadProducts()}>
+              Refresh
+            </button>
+          </section>
+
+          <article className="admin-editor brutal-block">
+            <h3>{editingId ? `Edit Product #${editingId}` : "Create Product"}</h3>
+            <form className="admin-form" onSubmit={onSubmit}>
+            <div className="admin-form-grid">
+              <div className="admin-field">
+                <label htmlFor="admin-slug">Slug</label>
+                <input
+                  id="admin-slug"
+                  className="text-input"
+                  value={form.slug}
+                  onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className="admin-field">
+                <label htmlFor="admin-name">Name</label>
+                <input
+                  id="admin-name"
+                  className="text-input"
+                  value={form.name}
+                  onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className="admin-field admin-field-span-2">
+                <label htmlFor="admin-tagline">Tagline</label>
+                <input
+                  id="admin-tagline"
+                  className="text-input"
+                  value={form.tagline}
+                  onChange={(event) => setForm((prev) => ({ ...prev, tagline: event.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className="admin-field admin-field-span-2">
+                <label htmlFor="admin-description">Description</label>
+                <textarea
+                  id="admin-description"
+                  className="text-input"
+                  value={form.description}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      description: event.target.value,
+                    }))
+                  }
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div className="admin-field">
+                <label htmlFor="admin-category">Category</label>
+                <select
+                  id="admin-category"
+                  className="text-input"
+                  value={form.category}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      category: event.target.value as Product["category"],
+                    }))
+                  }
+                >
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="admin-field">
+                <label htmlFor="admin-price">Price</label>
+                <input
+                  id="admin-price"
+                  className="text-input"
+                  type="number"
+                  min={1}
+                  value={form.price}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      price: Math.max(1, Number(event.target.value) || 1),
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="admin-field">
+                <label htmlFor="admin-stock">Stock</label>
+                <input
+                  id="admin-stock"
+                  className="text-input"
+                  type="number"
+                  min={0}
+                  value={form.stock}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      stock: Math.max(0, Number(event.target.value) || 0),
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="admin-field">
+                <label htmlFor="admin-rating">Rating</label>
+                <input
+                  id="admin-rating"
+                  className="text-input"
+                  type="number"
+                  min={0}
+                  max={5}
+                  step={0.1}
+                  value={form.rating}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      rating: Math.max(0, Math.min(5, Number(event.target.value) || 0)),
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="admin-field">
+                <label htmlFor="admin-accent">Accent</label>
+                <div className="admin-accent-row">
+                  <input
+                    id="admin-accent"
+                    className="admin-color-input"
+                    type="color"
+                    value={form.accent}
+                    onChange={(event) => setForm((prev) => ({ ...prev, accent: event.target.value }))}
+                  />
+                  <input
+                    className="text-input"
+                    value={form.accent}
+                    onChange={(event) => setForm((prev) => ({ ...prev, accent: event.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="admin-media">
+              <div className="admin-media-head">
+                <label htmlFor="admin-hero">Hero Image URL</label>
+                <label className="btn btn-light admin-upload-btn" htmlFor="admin-hero-upload">
+                  {uploadingHero ? "Uploading..." : "Upload Hero"}
+                </label>
+                <input
+                  id="admin-hero-upload"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+                  onChange={onUploadHero}
+                  disabled={uploadingHero}
+                  hidden
+                />
+              </div>
+              <input
+                id="admin-hero"
+                className="text-input"
+                value={form.heroImage}
+                onChange={(event) => setForm((prev) => ({ ...prev, heroImage: event.target.value }))}
+                required
+              />
+              {form.heroImage ? (
+                <div className="admin-hero-preview">
+                  <img src={form.heroImage} alt="Hero preview" />
+                </div>
+              ) : null}
+            </div>
+
+            <div className="admin-media">
+              <div className="admin-media-head">
+                <label htmlFor="admin-gallery-url">Gallery Images</label>
+                <label className="btn btn-light admin-upload-btn" htmlFor="admin-gallery-upload">
+                  {uploadingGallery ? "Uploading..." : "Upload Gallery"}
+                </label>
+                <input
+                  id="admin-gallery-upload"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+                  onChange={onUploadGallery}
+                  disabled={uploadingGallery}
+                  hidden
+                />
+              </div>
+
+              <div className="admin-gallery-add-row">
+                <input
+                  id="admin-gallery-url"
+                  className="text-input"
+                  value={galleryUrlInput}
+                  onChange={(event) => setGalleryUrlInput(event.target.value)}
+                  placeholder="Paste image URL"
+                />
+                <button type="button" className="btn btn-light" onClick={onAddGalleryUrl}>
+                  Add URL
+                </button>
+              </div>
+
+              {form.gallery.length > 0 ? (
+                <div className="admin-gallery-grid">
+                  {form.gallery.map((image, index) => (
+                    <div key={`${image}-${index}`} className="admin-gallery-item">
+                      <img src={image} alt={`Gallery ${index + 1}`} />
+                      <button
+                        type="button"
+                        className="btn btn-dark"
+                        onClick={() => onRemoveGalleryImage(index)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="admin-help">Add at least one gallery image (max 6).</p>
+              )}
+            </div>
+
+              <div className="product-actions">
+                <button type="submit" className="btn btn-dark">
+                  {editingId ? "Save Product" : "Create Product"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-light"
+                  onClick={() => {
+                    setEditingId(null);
+                    setForm(defaultForm);
+                    setGalleryUrlInput("");
+                  }}
+                >
+                  Reset
+                </button>
+              </div>
+              {message ? <p className="form-message">{message}</p> : null}
+            </form>
+          </article>
         </div>
-        <button type="button" className="btn btn-light" onClick={() => void loadProducts()}>
-          Refresh
-        </button>
-      </section>
 
-      <section className="admin-grid">
-        <form className="checkout-form brutal-block" onSubmit={onSubmit}>
-          <h3>{editingId ? `Edit Product #${editingId}` : "Create Product"}</h3>
-
-          <label htmlFor="admin-slug">Slug</label>
-          <input
-            id="admin-slug"
-            className="text-input"
-            value={form.slug}
-            onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
-            required
-          />
-
-          <label htmlFor="admin-name">Name</label>
-          <input
-            id="admin-name"
-            className="text-input"
-            value={form.name}
-            onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-            required
-          />
-
-          <label htmlFor="admin-tagline">Tagline</label>
-          <input
-            id="admin-tagline"
-            className="text-input"
-            value={form.tagline}
-            onChange={(event) => setForm((prev) => ({ ...prev, tagline: event.target.value }))}
-            required
-          />
-
-          <label htmlFor="admin-description">Description</label>
-          <textarea
-            id="admin-description"
-            className="text-input"
-            value={form.description}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                description: event.target.value,
-              }))
-            }
-            rows={4}
-            required
-          />
-
-          <label htmlFor="admin-category">Category</label>
-          <select
-            id="admin-category"
-            className="text-input"
-            value={form.category}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                category: event.target.value as Product["category"],
-              }))
-            }
-          >
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-
-          <label htmlFor="admin-price">Price</label>
-          <input
-            id="admin-price"
-            className="text-input"
-            type="number"
-            min={1}
-            value={form.price}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                price: Math.max(1, Number(event.target.value) || 1),
-              }))
-            }
-          />
-
-          <label htmlFor="admin-stock">Stock</label>
-          <input
-            id="admin-stock"
-            className="text-input"
-            type="number"
-            min={0}
-            value={form.stock}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                stock: Math.max(0, Number(event.target.value) || 0),
-              }))
-            }
-          />
-
-          <label htmlFor="admin-rating">Rating</label>
-          <input
-            id="admin-rating"
-            className="text-input"
-            type="number"
-            min={0}
-            max={5}
-            step={0.1}
-            value={form.rating}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                rating: Math.max(0, Math.min(5, Number(event.target.value) || 0)),
-              }))
-            }
-          />
-
-          <label htmlFor="admin-accent">Accent Color</label>
-          <input
-            id="admin-accent"
-            className="text-input"
-            value={form.accent}
-            onChange={(event) => setForm((prev) => ({ ...prev, accent: event.target.value }))}
-            required
-          />
-
-          <label htmlFor="admin-hero">Hero Image URL</label>
-          <input
-            id="admin-hero"
-            className="text-input"
-            value={form.heroImage}
-            onChange={(event) => setForm((prev) => ({ ...prev, heroImage: event.target.value }))}
-            required
-          />
-
-          <label htmlFor="admin-gallery">Gallery URLs (one per line)</label>
-          <textarea
-            id="admin-gallery"
-            className="text-input"
-            value={form.gallery.join("\n")}
-            rows={4}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                gallery: event.target.value
-                  .split("\n")
-                  .map((entry) => entry.trim())
-                  .filter(Boolean),
-              }))
-            }
-            required
-          />
-
-          <div className="product-actions">
-            <button type="submit" className="btn btn-dark">
-              {editingId ? "Save Product" : "Create Product"}
-            </button>
-            <button
-              type="button"
-              className="btn btn-light"
-              onClick={() => {
-                setEditingId(null);
-                setForm(defaultForm);
-              }}
-            >
-              Reset
-            </button>
-          </div>
-          {message ? <p className="form-message">{message}</p> : null}
-        </form>
-
-        <article className="account-card brutal-block">
+        <article className="admin-catalog brutal-block">
           <h3>Catalog</h3>
           {loading ? <p>Loading products...</p> : null}
-          <div className="order-list">
+          <div className="admin-product-list">
             {adminProducts.map((product) => (
-              <div className="order-item" key={product.id}>
-                <strong>
-                  #{product.id} {product.name}
-                </strong>
-                <span>{product.slug}</span>
-                <span>
-                  ${product.price} / stock {product.stock}
-                </span>
+              <div className="admin-product-card" key={product.id}>
+                <img src={product.heroImage} alt={product.name} />
+                <div className="admin-product-meta">
+                  <strong>
+                    #{product.id} {product.name}
+                  </strong>
+                  <span>{product.slug}</span>
+                  <span>
+                    ${product.price} / stock {product.stock} / {product.rating.toFixed(1)}
+                  </span>
+                </div>
                 <div className="product-actions">
                   <button
                     type="button"
                     className="btn btn-light"
                     onClick={() => {
                       setEditingId(product.id);
-                      setForm({
-                        slug: product.slug,
-                        name: product.name,
-                        tagline: product.tagline,
-                        description: product.description,
-                        price: product.price,
-                        category: product.category,
-                        accent: product.accent,
-                        heroImage: product.heroImage,
-                        gallery: product.gallery,
-                        stock: product.stock,
-                        rating: product.rating,
-                      });
+                      setForm(toFormProduct(product));
+                      setGalleryUrlInput("");
                     }}
                   >
                     Edit

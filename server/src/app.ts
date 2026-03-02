@@ -1,5 +1,6 @@
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
+import path from "node:path";
 import { env } from "./lib/env.js";
 import { HttpError } from "./lib/httpError.js";
 import adminRoutes from "./routes/admin.js";
@@ -11,6 +12,7 @@ import stripeRoutes from "./routes/stripe.js";
 
 export function createApp() {
   const app = express();
+  const uploadsDir = path.resolve(process.cwd(), "uploads");
 
   app.use(
     cors({
@@ -24,6 +26,8 @@ export function createApp() {
   app.get("/health", (_request, response) => {
     response.json({ ok: true, service: "earthco-market-server" });
   });
+
+  app.use("/api/uploads", express.static(uploadsDir));
 
   app.use("/api/auth", authRoutes);
   app.use("/api/products", productRoutes);

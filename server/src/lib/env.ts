@@ -16,7 +16,7 @@ export const env = {
   port: Number(process.env.PORT ?? 4000),
   clientOrigin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
   sessionDays: Number(process.env.SESSION_DAYS ?? 14),
-  adminEmails: (process.env.ADMIN_EMAILS ?? "")
+  adminEmails: (process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? "")
     .split(",")
     .map((entry) => entry.trim().toLowerCase())
     .filter(Boolean),

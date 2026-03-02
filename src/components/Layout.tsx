@@ -95,7 +95,7 @@ export default function Layout() {
         <button
           type="button"
           ref={hamburgerRef}
-          className="hamburger-btn btn btn-light icon-btn"
+          className="hamburger-btn btn btn-light"
           onClick={() => setMobileMenuOpen(true)}
           aria-label="Open menu"
           aria-expanded={mobileMenuOpen}
@@ -120,7 +120,7 @@ export default function Layout() {
               <button
                 type="button"
                 ref={closeBtnRef}
-                className="btn btn-light icon-btn mobile-menu-close"
+                className="btn btn-light mobile-menu-close"
                 onClick={() => {
                   closeMenu();
                   hamburgerRef.current?.focus();

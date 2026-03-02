@@ -1,7 +1,18 @@
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, ProductCategory } from "@prisma/client";
+import dotenv from "dotenv";
 import { products as storefrontProducts } from "../../src/data/products";
 
-const prisma = new PrismaClient();
+dotenv.config();
+
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("Missing required env var: DATABASE_URL");
+}
+
+const adapter = new PrismaPg({ connectionString: databaseUrl });
+const prisma = new PrismaClient({ adapter });
 
 const categoryMap: Record<string, ProductCategory> = {
   OUTERWEAR: ProductCategory.OUTERWEAR,

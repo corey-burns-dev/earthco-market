@@ -183,3 +183,31 @@ export function deleteAdminProduct(token: string, productId: number) {
     token,
   );
 }
+
+export async function uploadAdminImage(token: string, file: File) {
+  const response = await fetch(
+    `${API_BASE}/api/admin/uploads/image?name=${encodeURIComponent(file.name)}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": file.type || "application/octet-stream",
+      },
+      body: file,
+    },
+  );
+
+  const raw = await response.text();
+  const data = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+
+  if (!response.ok) {
+    const message = typeof data.message === "string" ? data.message : "Image upload failed.";
+    throw new ApiError(response.status, message);
+  }
+
+  if (typeof data.url !== "string") {
+    throw new ApiError(500, "Image upload failed.");
+  }
+
+  return { url: data.url };
+}

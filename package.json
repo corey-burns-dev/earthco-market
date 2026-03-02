@@ -20,7 +20,10 @@
     "prisma:generate": "bun run --cwd server prisma:generate",
     "db:migrate": "bun run --cwd server prisma:migrate",
     "db:seed": "bun run --cwd server prisma:seed",
-    "test": "bun run --cwd server test",
+    "test": "bun run test:frontend && bun run test:backend",
+    "test:frontend": "bunx vitest run",
+    "test:frontend:watch": "bunx vitest",
+    "test:backend": "bun run --cwd server test",
     "deps:outdated": "bun outdated --recursive",
     "deps:update": "bun update --recursive",
     "deps:update:latest": "bun update --latest --recursive",
@@ -29,18 +32,22 @@
     "format": "bunx @biomejs/biome format --write ."
   },
   "dependencies": {
-    "framer-motion": "^12.34.3",
-    "lucide-react": "^0.575.0",
+    "framer-motion": "^12.34.4",
+    "lucide-react": "^0.576.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.4",
+    "@biomejs/biome": "^2.4.5",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
+    "jsdom": "^28.1.0",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
   }
 }
