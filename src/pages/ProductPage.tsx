@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import ProductCard from "../components/ProductCard";
@@ -10,6 +10,11 @@ export default function ProductPage() {
   const { getProductBySlug, products, addToCart } = useStore();
   const product = slug ? getProductBySlug(slug) : undefined;
   const [quantity, setQuantity] = useState(1);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setQuantity(1);
+  }, [slug]);
 
   const related = useMemo(() => {
     if (!product) {
@@ -77,7 +82,7 @@ export default function ProductPage() {
           <div className="product-actions">
             <button
               type="button"
-              className="btn btn-dark"
+              className="btn btn-cart"
               onClick={() => {
                 addToCart(product.id, quantity);
               }}

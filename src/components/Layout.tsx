@@ -1,4 +1,4 @@
-import { Menu, ShoppingBag, UserRound, X } from "lucide-react";
+import { ArrowUp, Menu, ShoppingBag, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useStore } from "../context/StoreContext";
@@ -41,6 +41,7 @@ function NavLinks({ onNavigate, className }: { onNavigate?: () => void; classNam
 
 export default function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
@@ -73,6 +74,16 @@ export default function Layout() {
     else document.body.classList.remove("mobile-menu-open");
     return () => document.body.classList.remove("mobile-menu-open");
   }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setShowScrollTop(window.scrollY > 420);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <div className="app-frame">
@@ -130,6 +141,17 @@ export default function Layout() {
       )}
 
       <Outlet />
+
+      {showScrollTop ? (
+        <button
+          type="button"
+          className="btn btn-dark scroll-top-btn"
+          onClick={() => window.scrollTo({ top: 0, left: 0, behavior: "smooth" })}
+          aria-label="Scroll back to top"
+        >
+          <ArrowUp size={18} />
+        </button>
+      ) : null}
 
       <footer className="footer brutal-block">
         <div>

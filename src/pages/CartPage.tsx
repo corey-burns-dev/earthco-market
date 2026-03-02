@@ -30,64 +30,65 @@ export default function CartPage() {
 
   return (
     <PageShell>
-      <section className="section-head brutal-block">
-        <div>
-          <h2>Cart</h2>
-          <p>Adjust quantities before moving to checkout.</p>
-        </div>
-        <button type="button" className="btn btn-light" onClick={clearCart}>
-          Clear Cart
-        </button>
-      </section>
-
       <section className="cart-grid">
-        <article className="cart-lines brutal-block">
-          {cartLines.map((line) => (
-            <div className="cart-line" key={line.product.id}>
-              <img src={line.product.heroImage} alt={line.product.name} />
-              <div className="cart-line-info">
-                <h3>{line.product.name}</h3>
-                <p>{line.product.tagline}</p>
-                <strong className="cart-line-unit-price">
-                  {formatCurrency(line.product.price)}
-                </strong>
+        <div className="cart-main-stack">
+          <article className="cart-lines brutal-block">
+            <div className="cart-lines-header">
+              <div>
+                <h2>Cart</h2>
+                <p>Adjust quantities before moving to checkout.</p>
               </div>
-              <div className="line-qty">
-                <button
-                  type="button"
-                  className="btn btn-light"
-                  onClick={() => {
-                    updateCartQuantity(line.product.id, line.quantity - 1);
-                  }}
-                >
-                  -
-                </button>
-                <span>{line.quantity}</span>
-                <button
-                  type="button"
-                  className="btn btn-light"
-                  onClick={() => {
-                    updateCartQuantity(line.product.id, line.quantity + 1);
-                  }}
-                >
-                  +
-                </button>
-              </div>
-              <div className="line-total">
-                <strong>{formatCurrency(line.lineTotal)}</strong>
-                <button
-                  type="button"
-                  className="text-link"
-                  onClick={() => {
-                    removeFromCart(line.product.id);
-                  }}
-                >
-                  Remove
-                </button>
-              </div>
+              <button type="button" className="btn btn-light" onClick={clearCart}>
+                Clear Cart
+              </button>
             </div>
-          ))}
-        </article>
+            {cartLines.map((line) => (
+              <div className="cart-line" key={line.product.id}>
+                <img src={line.product.heroImage} alt={line.product.name} />
+                <div className="cart-line-info">
+                  <h3>{line.product.name}</h3>
+                  <p>{line.product.tagline}</p>
+                  <strong className="cart-line-unit-price">
+                    {formatCurrency(line.product.price)}
+                  </strong>
+                </div>
+                <div className="line-qty">
+                  <button
+                    type="button"
+                    className="btn btn-light"
+                    onClick={() => {
+                      updateCartQuantity(line.product.id, line.quantity - 1);
+                    }}
+                  >
+                    -
+                  </button>
+                  <span>{line.quantity}</span>
+                  <button
+                    type="button"
+                    className="btn btn-light"
+                    onClick={() => {
+                      updateCartQuantity(line.product.id, line.quantity + 1);
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+                <div className="line-total">
+                  <strong>{formatCurrency(line.lineTotal)}</strong>
+                  <button
+                    type="button"
+                    className="text-link"
+                    onClick={() => {
+                      removeFromCart(line.product.id);
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </article>
+        </div>
 
         <aside className="cart-summary brutal-block">
           <h3>Summary</h3>
