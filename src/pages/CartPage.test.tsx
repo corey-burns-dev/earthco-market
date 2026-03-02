@@ -33,7 +33,7 @@ describe("CartPage", () => {
       updateCartQuantity: vi.fn(),
       removeFromCart: vi.fn(),
       clearCart: vi.fn(),
-    } as ReturnType<typeof useStore>);
+    } as unknown as ReturnType<typeof useStore>);
 
     render(
       <MemoryRouter>
@@ -77,7 +77,7 @@ describe("CartPage", () => {
       updateCartQuantity,
       removeFromCart,
       clearCart,
-    } as ReturnType<typeof useStore>);
+    } as unknown as ReturnType<typeof useStore>);
 
     render(
       <MemoryRouter>
